@@ -42,7 +42,7 @@
 <div class="min-h-screen bg-[#f8fafc] text-slate-900 selection:bg-blue-600 selection:text-white">
     <PublicNavbar {adminPhone} />
 
-    <PublicHero {units} {adminPhone} />
+    <PublicHero {adminPhone} />
 
     <PublicUnitCatalog {units} {adminPhone} />
 

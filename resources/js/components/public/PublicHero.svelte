@@ -2,15 +2,6 @@
     import { onMount } from 'svelte';
     import { page } from '@inertiajs/svelte';
 
-    interface PublicUnitItem {
-        id: number;
-        unit_number: string;
-        monthly_price: number;
-        status: 'available' | 'occupied' | 'maintenance';
-        description: string | null;
-        photo_url: string | null;
-    }
-
     interface HeroSlideItem {
         label: string;
         photo_url: string | null;
@@ -21,27 +12,17 @@
         site_name: string;
         hero_title: string;
         hero_subtitle: string;
+        hero_slides?: HeroSlideItem[];
         whatsapp_number: string;
     }
 
     let {
-        units = [],
         adminPhone = '081312132075',
     }: {
-        units?: PublicUnitItem[];
         adminPhone?: string;
     } = $props();
 
     let activeSlide = $state(0);
-
-    const site = $derived(
-        (page.props.siteSettings as SharedSiteSettings | undefined) ?? {
-            site_name: 'Kontrakan Ibu',
-            hero_title: 'Hunian sewa bulanan yang tenang, bersih, dan terawat.',
-            hero_subtitle: 'Lingkungan nyaman untuk beristirahat dengan akses mudah dan pengelolaan langsung yang rapi.',
-            whatsapp_number: adminPhone,
-        }
-    );
 
     const defaultSlides: HeroSlideItem[] = [
         {
@@ -61,25 +42,23 @@
         },
     ];
 
-    const slides = $derived.by<HeroSlideItem[]>(() => {
-        const uploaded = units.filter((u) => u.photo_url !== null && u.photo_url !== '');
-
-        if (uploaded.length === 0) {
-            return defaultSlides;
+    const site = $derived(
+        (page.props.siteSettings as SharedSiteSettings | undefined) ?? {
+            site_name: 'Kontrakan Ibu',
+            hero_title: 'Hunian sewa bulanan yang tenang, bersih, dan terawat.',
+            hero_subtitle: 'Lingkungan nyaman untuk beristirahat dengan akses mudah dan pengelolaan langsung yang rapi.',
+            hero_slides: defaultSlides,
+            whatsapp_number: adminPhone,
         }
+    );
 
-        return uploaded.map((u) => ({
-            label: u.unit_number,
-            photo_url: u.photo_url,
-            bgClass: 'bg-slate-950',
-        }));
-    });
+    const slides = $derived<HeroSlideItem[]>(
+        site.hero_slides && site.hero_slides.length === 3 ? site.hero_slides : defaultSlides
+    );
 
     onMount(() => {
         const interval = setInterval(() => {
-            if (slides.length > 0) {
-                activeSlide = (activeSlide + 1) % slides.length;
-            }
+            activeSlide = (activeSlide + 1) % slides.length;
         }, 6000);
 
         return () => clearInterval(interval);

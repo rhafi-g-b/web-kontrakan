@@ -3,6 +3,12 @@
     import AppHead from '@/components/AppHead.svelte';
     import AdminLayout from '@/layouts/AdminLayout.svelte';
 
+    interface HeroSlideSettingItem {
+        label: string;
+        photo_url: string | null;
+        bgClass: string;
+    }
+
     interface SiteSettingsData {
         site_name: string;
         site_initial: string;
@@ -10,6 +16,7 @@
         logo_url: string | null;
         hero_title: string;
         hero_subtitle: string;
+        hero_slides: HeroSlideSettingItem[];
         whatsapp_number: string;
         footer_description: string;
         survey_hours: string;
@@ -28,6 +35,19 @@
     let siteTagline = $state('');
     let heroTitle = $state('');
     let heroSubtitle = $state('');
+
+    let slide1Label = $state('');
+    let slide2Label = $state('');
+    let slide3Label = $state('');
+
+    let removeSlide1 = $state(false);
+    let removeSlide2 = $state(false);
+    let removeSlide3 = $state(false);
+
+    let slide1Input = $state<HTMLInputElement | null>(null);
+    let slide2Input = $state<HTMLInputElement | null>(null);
+    let slide3Input = $state<HTMLInputElement | null>(null);
+
     let whatsappNumber = $state('');
     let footerDescription = $state('');
     let surveyHours = $state('');
@@ -45,6 +65,9 @@
         siteTagline = settings.site_tagline;
         heroTitle = settings.hero_title;
         heroSubtitle = settings.hero_subtitle;
+        slide1Label = settings.hero_slides?.[0]?.label ?? 'Tampak Depan & Lingkungan';
+        slide2Label = settings.hero_slides?.[1]?.label ?? 'Area Parkir & Teras Unit';
+        slide3Label = settings.hero_slides?.[2]?.label ?? 'Bagian Dalam Ruangan';
         whatsappNumber = settings.whatsapp_number;
         footerDescription = settings.footer_description;
         surveyHours = settings.survey_hours;
@@ -62,6 +85,30 @@
         formData.append('site_tagline', siteTagline);
         formData.append('hero_title', heroTitle);
         formData.append('hero_subtitle', heroSubtitle);
+
+        formData.append('hero_slide_1_label', slide1Label);
+        formData.append('hero_slide_2_label', slide2Label);
+        formData.append('hero_slide_3_label', slide3Label);
+
+        formData.append('remove_hero_slide_1', removeSlide1 ? '1' : '0');
+        formData.append('remove_hero_slide_2', removeSlide2 ? '1' : '0');
+        formData.append('remove_hero_slide_3', removeSlide3 ? '1' : '0');
+
+        const rawSlide1 = slide1Input?.files?.[0];
+        if (rawSlide1) {
+            formData.append('hero_slide_1', rawSlide1);
+        }
+
+        const rawSlide2 = slide2Input?.files?.[0];
+        if (rawSlide2) {
+            formData.append('hero_slide_2', rawSlide2);
+        }
+
+        const rawSlide3 = slide3Input?.files?.[0];
+        if (rawSlide3) {
+            formData.append('hero_slide_3', rawSlide3);
+        }
+
         formData.append('whatsapp_number', whatsappNumber);
         formData.append('footer_description', footerDescription);
         formData.append('survey_hours', surveyHours);
@@ -79,9 +126,13 @@
             onFinish: () => {
                 isSubmitting = false;
                 removeLogo = false;
-                if (logoInput) {
-                    logoInput.value = '';
-                }
+                removeSlide1 = false;
+                removeSlide2 = false;
+                removeSlide3 = false;
+                if (logoInput) logoInput.value = '';
+                if (slide1Input) slide1Input.value = '';
+                if (slide2Input) slide2Input.value = '';
+                if (slide3Input) slide3Input.value = '';
             },
         });
     }
@@ -91,7 +142,7 @@
 
 <AdminLayout
     title="Pengaturan Website & Identitas"
-    subtitle="Atur logo, nama kontrakan, teks hero, nomor WhatsApp, dan informasi footer"
+    subtitle="Atur logo, nama kontrakan, 3 foto slide hero, nomor WhatsApp, dan informasi footer"
     activeMenu="settings"
 >
     <form onsubmit={submitSettings} class="space-y-6">
@@ -180,8 +231,10 @@
         </div>
 
         <div class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs sm:p-6">
-            <h2 class="text-base font-bold text-slate-900">2. Teks Hero Halaman Depan</h2>
-            <p class="text-xs text-slate-500">Kalimat sambutan utama yang dilihat pengunjung saat membuka halaman depan</p>
+            <h2 class="text-base font-bold text-slate-900">2. Teks & 3 Foto Berjalan (Slide Hero)</h2>
+            <p class="text-xs text-slate-500">
+                Atur kalimat sambutan dan 3 foto latar belakang berjalan di halaman utama. Jika foto belum diunggah, otomatis tampil sebagai placeholder.
+            </p>
 
             <div class="mt-5 space-y-4">
                 <div>
@@ -213,6 +266,185 @@
                     {#if errors.hero_subtitle}
                         <p class="mt-1 text-xs font-medium text-rose-600">{errors.hero_subtitle}</p>
                     {/if}
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 pt-3 lg:grid-cols-3">
+                    <div class="rounded-2xl border border-slate-200 bg-gray-50/70 p-4">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-800">Slide Foto 1</p>
+
+                        <div class="mt-2.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
+                            {#if settings.hero_slides?.[0]?.photo_url && !removeSlide1}
+                                <img
+                                    src={settings.hero_slides[0].photo_url}
+                                    alt={slide1Label}
+                                    class="h-32 w-full object-cover"
+                                />
+                            {:else}
+                                <div class="flex h-32 items-center justify-center p-3 text-center">
+                                    <span class="text-[11px] font-medium uppercase tracking-widest text-white/30">
+                                        Placeholder — {slide1Label || 'Slide 1'}
+                                    </span>
+                                </div>
+                            {/if}
+                        </div>
+
+                        {#if settings.hero_slides?.[0]?.photo_url && !removeSlide1}
+                            <button
+                                type="button"
+                                onclick={() => (removeSlide1 = true)}
+                                class="mt-2 w-full cursor-pointer rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-600 hover:text-white"
+                            >
+                                Hapus Foto (Gunakan Placeholder)
+                            </button>
+                        {/if}
+
+                        <div class="mt-3">
+                            <label for="slide_1_label" class="block text-[11px] font-semibold uppercase text-slate-600">
+                                Keterangan Slide 1
+                            </label>
+                            <input
+                                id="slide_1_label"
+                                type="text"
+                                bind:value={slide1Label}
+                                placeholder="Tampak Depan & Lingkungan"
+                                class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                            />
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="slide_1_file" class="block text-[11px] font-semibold uppercase text-slate-600">
+                                Unggah / Ganti Foto 1
+                            </label>
+                            <input
+                                id="slide_1_file"
+                                type="file"
+                                bind:this={slide1Input}
+                                accept="image/png,image/jpeg,image/webp"
+                                class="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                            {#if errors.hero_slide_1}
+                                <p class="mt-1 text-xs font-medium text-rose-600">{errors.hero_slide_1}</p>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-gray-50/70 p-4">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-800">Slide Foto 2</p>
+
+                        <div class="mt-2.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+                            {#if settings.hero_slides?.[1]?.photo_url && !removeSlide2}
+                                <img
+                                    src={settings.hero_slides[1].photo_url}
+                                    alt={slide2Label}
+                                    class="h-32 w-full object-cover"
+                                />
+                            {:else}
+                                <div class="flex h-32 items-center justify-center p-3 text-center">
+                                    <span class="text-[11px] font-medium uppercase tracking-widest text-white/30">
+                                        Placeholder — {slide2Label || 'Slide 2'}
+                                    </span>
+                                </div>
+                            {/if}
+                        </div>
+
+                        {#if settings.hero_slides?.[1]?.photo_url && !removeSlide2}
+                            <button
+                                type="button"
+                                onclick={() => (removeSlide2 = true)}
+                                class="mt-2 w-full cursor-pointer rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-600 hover:text-white"
+                            >
+                                Hapus Foto (Gunakan Placeholder)
+                            </button>
+                        {/if}
+
+                        <div class="mt-3">
+                            <label for="slide_2_label" class="block text-[11px] font-semibold uppercase text-slate-600">
+                                Keterangan Slide 2
+                            </label>
+                            <input
+                                id="slide_2_label"
+                                type="text"
+                                bind:value={slide2Label}
+                                placeholder="Area Parkir & Teras Unit"
+                                class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                            />
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="slide_2_file" class="block text-[11px] font-semibold uppercase text-slate-600">
+                                Unggah / Ganti Foto 2
+                            </label>
+                            <input
+                                id="slide_2_file"
+                                type="file"
+                                bind:this={slide2Input}
+                                accept="image/png,image/jpeg,image/webp"
+                                class="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                            {#if errors.hero_slide_2}
+                                <p class="mt-1 text-xs font-medium text-rose-600">{errors.hero_slide_2}</p>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-gray-50/70 p-4">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-800">Slide Foto 3</p>
+
+                        <div class="mt-2.5 overflow-hidden rounded-xl border border-slate-200 bg-neutral-900">
+                            {#if settings.hero_slides?.[2]?.photo_url && !removeSlide3}
+                                <img
+                                    src={settings.hero_slides[2].photo_url}
+                                    alt={slide3Label}
+                                    class="h-32 w-full object-cover"
+                                />
+                            {:else}
+                                <div class="flex h-32 items-center justify-center p-3 text-center">
+                                    <span class="text-[11px] font-medium uppercase tracking-widest text-white/30">
+                                        Placeholder — {slide3Label || 'Slide 3'}
+                                    </span>
+                                </div>
+                            {/if}
+                        </div>
+
+                        {#if settings.hero_slides?.[2]?.photo_url && !removeSlide3}
+                            <button
+                                type="button"
+                                onclick={() => (removeSlide3 = true)}
+                                class="mt-2 w-full cursor-pointer rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-600 hover:text-white"
+                            >
+                                Hapus Foto (Gunakan Placeholder)
+                            </button>
+                        {/if}
+
+                        <div class="mt-3">
+                            <label for="slide_3_label" class="block text-[11px] font-semibold uppercase text-slate-600">
+                                Keterangan Slide 3
+                            </label>
+                            <input
+                                id="slide_3_label"
+                                type="text"
+                                bind:value={slide3Label}
+                                placeholder="Bagian Dalam Ruangan"
+                                class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                            />
+                        </div>
+
+                        <div class="mt-3">
+                            <label for="slide_3_file" class="block text-[11px] font-semibold uppercase text-slate-600">
+                                Unggah / Ganti Foto 3
+                            </label>
+                            <input
+                                id="slide_3_file"
+                                type="file"
+                                bind:this={slide3Input}
+                                accept="image/png,image/jpeg,image/webp"
+                                class="mt-1 block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                            {#if errors.hero_slide_3}
+                                <p class="mt-1 text-xs font-medium text-rose-600">{errors.hero_slide_3}</p>
+                            {/if}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
